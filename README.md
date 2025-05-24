@@ -39,8 +39,8 @@ Follow these steps to set up the project locally:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/<your-username>/<your-repo-name>.git
-    cd <your-repo-name>
+  [  git clone https://github.com/<your-username>/<your-repo-name>.git
+    cd <your-repo-name>](https://github.com/TheSultann/SpeakCheck.git)
     ```
 
 2.  **Install dependencies:**
@@ -104,8 +104,8 @@ _(Note: You'll need to create a `LICENSE` file with the MIT License text if you 
 
 For questions, suggestions, or feedback, feel free to reach out:
 
--   **Telegram**: `@your_telegram_username` (Optional)
--   **Email**: `your-email@example.com`
+-   **Telegram**: `https://t.me/S7L5An` (Optional)
+-   **Email**: `otanazarovsultanbek@gmail.com`
 
 ---
     *   Receive tailored grammar feedback on your responses.
