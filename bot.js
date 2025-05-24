@@ -1,9 +1,11 @@
+// Файл: bot.js
+
 const dotenv = require('dotenv');
 const { Telegraf, session, MemorySessionStore, Markup } = require('telegraf');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-const fs = require('fs').promises; // Keep fs.promises if needed elsewhere, though not used in this version
+const fs = require('fs').promises;
 const os = require('os');
-const path = require('path'); // Keep path if needed elsewhere
+const path = require('path');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const speech = require('@google-cloud/speech');
 
@@ -13,11 +15,11 @@ dotenv.config();
 const CONFIG = {
     MAX_FILE_SIZE: 10 * 1024 * 1024, // 10 MB
     GOOGLE_SPEECH_LANG_CODE: 'en-US',
-    GOOGLE_SPEECH_SAMPLE_RATE: 48000 // Частота для OGG_OPUS из Telegram
+    GOOGLE_SPEECH_SAMPLE_RATE: 48000
 };
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-const tempDir = os.tmpdir(); // Keep tempDir if needed elsewhere
+const tempDir = os.tmpdir();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const speechClient = new speech.SpeechClient();
@@ -29,32 +31,25 @@ const startMenuKeyboard = Markup.keyboard([
 
 const replyToUser = async (ctx, message, extra = {}) => {
   const options = { ...extra };
-  // Ensure no parse_mode is set initially, unless explicitly provided in 'extra'
-  // delete options.parse_mode; // Removed this line as parse_mode might be needed in 'extra'
-
   try {
-    const MAX_LENGTH = 4000; // Telegram max message length is 4096, use a slightly smaller buffer
+    const MAX_LENGTH = 4000;
     if (message.length > MAX_LENGTH) {
         console.warn(`Message too long (${message.length} chars), splitting.`);
         let currentPos = 0;
         while(currentPos < message.length) {
             let chunkEnd = currentPos + MAX_LENGTH;
             let chunk = message.substring(currentPos, chunkEnd);
-
-            // Try to split at a newline near the end for better readability
             if (chunkEnd < message.length) {
                 const lastNewline = chunk.lastIndexOf('\n');
-                // Only split at newline if it's reasonably far into the chunk
                 if (lastNewline > MAX_LENGTH / 2) {
                     chunk = chunk.substring(0, lastNewline);
-                    chunkEnd = currentPos + lastNewline + 1; // Move start position after the newline
+                    chunkEnd = currentPos + lastNewline + 1;
                 }
             }
-            // Pass options only for the first part or if specifically needed
-            const partOptions = currentPos === 0 ? options : { reply_to_message_id: options.reply_to_message_id, parse_mode: options.parse_mode }; // Carry over relevant options
+            const partOptions = currentPos === 0 ? options : { reply_to_message_id: options.reply_to_message_id, parse_mode: options.parse_mode };
             await ctx.reply(chunk, partOptions);
             currentPos = chunkEnd;
-            await new Promise(resolve => setTimeout(resolve, 250)); // Small delay between chunks
+            await new Promise(resolve => setTimeout(resolve, 250));
         }
     } else {
         await ctx.reply(message, options);
@@ -77,7 +72,6 @@ const replyToUser = async (ctx, message, extra = {}) => {
 const checkGrammar = async (text) => {
   if (!text || !text.trim()) return { corrected_text: text || '', corrections: [] };
   const trimmedText = text.trim();
-
   console.time('CheckGrammarWithDetails');
   const prompt = `Analyze the following English text for grammar, style, spelling, and punctuation errors.
 Respond ONLY with a valid JSON object containing two keys:
@@ -88,7 +82,6 @@ Respond ONLY with a valid JSON object containing two keys:
 2. "corrected_text": The full, corrected version of the entire input text, incorporating all fixes.
 
 If no errors are found, the "corrections" array MUST be empty, and "corrected_text" MUST be the original input text.
-
 Do NOT include any text outside the single JSON object. Ensure the JSON is strictly valid.
 
 Input Text:
@@ -96,33 +89,25 @@ Input Text:
 ${trimmedText}
 \`\`\`
 `;
-
   try {
     const result = await geminiModel.generateContent(prompt);
     const response = result.response;
     let responseText = response.text()?.trim();
-
     if (!responseText) {
         console.error('Gemini API returned empty response.');
-        return null; // Indicate failure
+        return null;
     }
-
-    // Clean potential markdown code blocks
     if (responseText.startsWith('```json')) responseText = responseText.substring(7);
     else if (responseText.startsWith('```')) responseText = responseText.substring(3);
     if (responseText.endsWith('```')) responseText = responseText.substring(0, responseText.length - 3);
     responseText = responseText.trim();
-
     try {
         const analysisResult = JSON.parse(responseText);
-
-        // Validate the structure
         if (typeof analysisResult === 'object' &&
             analysisResult !== null &&
             typeof analysisResult.corrected_text === 'string' &&
             Array.isArray(analysisResult.corrections))
         {
-            // Sanitize the results further
             analysisResult.corrected_text = analysisResult.corrected_text.trim();
             analysisResult.corrections = analysisResult.corrections.filter(c =>
                 typeof c === 'object' && c !== null &&
@@ -137,26 +122,24 @@ ${trimmedText}
             return analysisResult;
         } else {
             console.error('Gemini API JSON structure mismatch:', responseText);
-             // Attempt fallback if corrected_text exists but structure is wrong
              const fallbackCorrected = analysisResult?.corrected_text?.trim() || (typeof analysisResult === 'string' ? analysisResult.trim() : null);
              if (fallbackCorrected) {
                  console.warn('Using fallback corrected_text due to structure mismatch.');
                  return { corrected_text: fallbackCorrected, corrections: [] };
              }
-             return null; // Indicate failure due to structure mismatch
+             return null;
         }
     } catch (parseError) {
       console.error('Gemini JSON parse error:', parseError, 'Received:', responseText);
-      // If the response is just plain text (likely the correction itself), use it
       if (responseText && !responseText.includes('{') && !responseText.includes('[')) {
           console.warn('Gemini response was not JSON, treating as corrected text.');
           return { corrected_text: responseText.trim(), corrections: [] };
       }
-      return null; // Indicate failure due to parsing error
+      return null;
     }
   } catch (error) {
     console.error('Gemini API error:', error);
-    return null; // Indicate API failure
+    return null;
   } finally {
     console.timeEnd('CheckGrammarWithDetails');
   }
@@ -165,7 +148,7 @@ ${trimmedText}
 const recognizeSpeech = async (audioBuffer) => {
     console.time('SpeechRecognition Google (OGG)');
     try {
-        const audio = { content: audioBuffer.toString('base64') }; // Send as base64 string
+        const audio = { content: audioBuffer.toString('base64') };
         const config = {
             encoding: 'OGG_OPUS',
             sampleRateHertz: CONFIG.GOOGLE_SPEECH_SAMPLE_RATE,
@@ -173,24 +156,20 @@ const recognizeSpeech = async (audioBuffer) => {
             enableAutomaticPunctuation: true,
         };
         const request = { audio, config };
-
         const [response] = await speechClient.recognize(request);
         const transcription = response.results
             .map(result => result.alternatives[0].transcript)
             .join('\n')
             .trim();
-
         console.timeEnd('SpeechRecognition Google (OGG)');
-        return transcription || ""; // Return empty string if no transcription
-
+        return transcription || "";
     } catch (error) {
         console.error('Google Cloud Speech API Error:', error.details || error.message || error);
         console.timeEnd('SpeechRecognition Google (OGG)');
-        return null; // Indicate an error occurred
+        return null;
     }
 };
 
-// --- Bot Logic ---
 const sessionStore = new MemorySessionStore();
 bot.use(session({ store: sessionStore }));
 
@@ -201,7 +180,7 @@ ieltsHandler.register(bot, {
 });
 
 bot.start(async (ctx) => {
-    ctx.session = {}; // Initialize or reset session on /start
+    ctx.session = {};
     await replyToUser(ctx, 'Hi! Send me a voice message or text in English for correction, or use the button below to practice IELTS Speaking questions. 🚀✨', {
         reply_markup: startMenuKeyboard.reply_markup
     });
@@ -212,63 +191,83 @@ bot.hears('IELTS Practice', (ctx) => {
         replyToUser(ctx, "You are already in an IELTS practice session. Use /stop or the 'Stop Practice' button if available.");
         return;
     }
-    ctx.session = ctx.session || {}; // Ensure session exists
-    ctx.session.ieltsState = undefined; // Clear previous IELTS state if any
+    ctx.session = ctx.session || {};
+    ctx.session.ieltsState = undefined;
     ieltsHandler.startIeltsPractice(ctx);
 });
 
-// Обработчик для инлайн-кнопок
+// --- ОБНОВЛЕННЫЙ ОБРАБОТЧИК ---
 bot.on('callback_query', async (ctx) => {
+    // Диагностические логи (можно закомментировать или удалить для продакшена)
+    console.log('--- Callback Query Received ---');
+    console.log('Callback Data:', ctx.callbackQuery.data);
+    // console.log('Session State (at callback):', JSON.stringify(ctx.session, null, 2)); // Может быть слишком многословно
+
     try {
         const data = ctx.callbackQuery.data;
         const chatId = ctx.chat.id;
 
         if (data.startsWith('show_corrections_')) {
             const correctionId = data.split('show_corrections_')[1];
-            const corrections = ctx.session?.corrections?.[correctionId]; // Use optional chaining
-            if (corrections && corrections.length > 0) { // Check if array has items
-                let correctionsMessage = `📝 Corrections:\n`;
-                corrections.forEach((corr, index) => {
-                    // Basic escaping for MarkdownV2
-                    const escapeMd = (str) => str.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
-                    correctionsMessage += `${index + 1}\\. *"${escapeMd(corr.original_phrase)}"* → *"${escapeMd(corr.corrected_phrase)}"*\n`;
-                    correctionsMessage += `   Reason: ${escapeMd(corr.explanation)}\n`;
+            // console.log('Extracted Correction ID:', correctionId); // Для отладки
+
+            const correctionsData = ctx.session?.corrections?.[correctionId];
+
+            if (correctionsData && correctionsData.length > 0) {
+                const escapeMd = (str) => str.toString().replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
+                let correctionsMessage = `*❗️ Объяснение:*\n\n`;
+                correctionsData.forEach((corr, index) => {
+                    correctionsMessage += `${index + 1}\\. ${escapeMd(corr.original_phrase)} → ❌\n`;
+                    correctionsMessage += `   ✅ ${escapeMd(corr.corrected_phrase)} — _${escapeMd(corr.explanation)}_\n\n`;
                 });
-                // Use MarkdownV2 for formatting
-                await ctx.telegram.sendMessage(chatId, correctionsMessage, { parse_mode: 'MarkdownV2' });
-                // Consider deleting corrections after showing to prevent reuse/memory leak
-                // delete ctx.session.corrections[correctionId];
+
+                // Получаем ID сообщения, к которому была прикреплена кнопка
+                const messageWithButtonId = ctx.callbackQuery.message?.message_id;
+
+                // Отправляем исправления как ответ на это сообщение
+                await ctx.telegram.sendMessage(chatId, correctionsMessage.trim(), {
+                    parse_mode: 'MarkdownV2',
+                    reply_to_message_id: messageWithButtonId // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
+                });
+
+                // Очищаем исправления из сессии после показа
+                if (ctx.session?.corrections?.[correctionId]) { // Проверка перед удалением
+                    delete ctx.session.corrections[correctionId];
+                    if (Object.keys(ctx.session.corrections).length === 0) {
+                        delete ctx.session.corrections;
+                    }
+                }
             } else {
-                await ctx.telegram.sendMessage(chatId, 'Corrections not found or already shown.');
+                console.warn(`Corrections not found for ID: ${correctionId} or corrections array is empty. Session corrections:`, ctx.session?.corrections);
+                await ctx.telegram.sendMessage(chatId, 'Коррекции не найдены или уже были показаны.');
             }
-            await ctx.answerCbQuery(); // Acknowledge the callback query
+            await ctx.answerCbQuery();
         } else {
-             await ctx.answerCbQuery("Action not recognized."); // Handle unknown callbacks
+             console.log(`Received unhandled callback_query data: ${data}`);
+             await ctx.answerCbQuery("Действие не распознано.");
         }
     } catch (error) {
-        console.error("Error processing callback query:", error);
-        await ctx.answerCbQuery("Error processing your request."); // Inform user about error
+        console.error("Ошибка обработки callback query:", error);
+        if (!ctx.answered) { // Убедимся, что на callback ответили, даже если произошла ошибка
+            await ctx.answerCbQuery("Произошла ошибка при обработке вашего запроса.").catch(e => console.error("Не удалось ответить на callback query после ошибки:", e));
+        }
     }
 });
+// --- КОНЕЦ ОБНОВЛЕННОГО ОБРАБОТЧИКА ---
 
-// Text Message Handler
 bot.on('text', async (ctx) => {
     const userMessage = ctx.message.text;
     const chatId = ctx.chat.id;
     const messageId = ctx.message.message_id;
 
-    // Ignore the command itself if sent as text
     if (userMessage === 'IELTS Practice') return;
 
-    // Check if it's an IELTS answer first
     if (ctx.session?.ieltsState?.waitingAnswer) {
         if (await ieltsHandler.handleIeltsAnswerAndAskNext(ctx, userMessage)) {
             console.log(`[${chatId}] Handled text as IELTS answer.`);
             return;
         } else {
             console.log(`[${chatId}] Text was potentially IELTS answer, but handler returned false. Processing normally.`);
-            // If handler returns false, it means it wasn't a valid answer in that context,
-            // so we proceed to normal grammar check.
         }
     }
 
@@ -277,26 +276,20 @@ bot.on('text', async (ctx) => {
 
     try {
         const grammarResult = await checkGrammar(userMessage);
-
-        // --- ИСПРАВЛЕНИЕ ---
         if (!grammarResult) {
-            // Если checkGrammar вернул null или undefined, отправляем сообщение об ошибке и выходим
             console.error(`[${chatId}] checkGrammar failed for text input.`);
             await replyToUser(ctx, 'Sorry, an error occurred while checking grammar. Please try again later.', { reply_to_message_id: messageId });
-            return; // Прекращаем обработку этого сообщения
+            return;
         }
-        // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
-
-        // Теперь мы уверены, что grammarResult - это объект
         const { corrected_text, corrections } = grammarResult;
 
         if (corrections && corrections.length > 0) {
-            const correctionId = Date.now().toString() + Math.random().toString(36).substring(2, 7); // More unique ID
-            ctx.session = ctx.session || {}; // Ensure session object exists
+            const correctionId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+            ctx.session = ctx.session || {};
             ctx.session.corrections = ctx.session.corrections || {};
             ctx.session.corrections[correctionId] = corrections;
 
-            let responseMessage = `❌ Your Message:\n_"${userMessage}"_\n\n`; // Using markdown for italics
+            let responseMessage = `❌ Your Message:\n_"${userMessage}"_\n\n`;
             responseMessage += `✅ Improved Version:\n_"${corrected_text}"_`;
             const keyboard = Markup.inlineKeyboard([
                 Markup.button.callback('Show Corrections', `show_corrections_${correctionId}`)
@@ -304,15 +297,13 @@ bot.on('text', async (ctx) => {
             await replyToUser(ctx, responseMessage, {
                 reply_to_message_id: messageId,
                 reply_markup: keyboard.reply_markup,
-                parse_mode: 'Markdown' // Enable Markdown for italics
+                parse_mode: 'Markdown'
             });
         } else if (corrected_text && corrected_text.toLowerCase() !== userMessage.trim().toLowerCase()) {
-            // No specific errors found, but the text was improved/changed
             let responseMessage = `❌ Your Message:\n_"${userMessage}"_\n\n`;
             responseMessage += `✅ Improved Version (minor changes):\n_"${corrected_text}"_`;
             await replyToUser(ctx, responseMessage, { reply_to_message_id: messageId, parse_mode: 'Markdown' });
         } else {
-            // Text is likely correct or couldn't be improved
             await replyToUser(ctx, `✅ Your message seems correct:\n_"${userMessage}"_`, { reply_to_message_id: messageId, parse_mode: 'Markdown' });
         }
     } catch (error) {
@@ -321,7 +312,6 @@ bot.on('text', async (ctx) => {
     }
 });
 
-// Voice Message Handler
 bot.on('voice', async (ctx) => {
     const voice = ctx.message.voice;
     const chatId = ctx.chat.id;
@@ -341,67 +331,51 @@ bot.on('voice', async (ctx) => {
     try {
         processingMessage = await ctx.reply('Processing your voice message... ⏳', { reply_to_message_id: messageId, disable_notification: true });
         await ctx.telegram.sendChatAction(chatId, 'typing');
-
         console.time('FetchVoice');
         const fileLink = await ctx.telegram.getFileLink(voice.file_id);
         const response = await fetch(fileLink.href);
         if (!response.ok) throw new Error(`Failed to download file: ${response.statusText}`);
         audioBuffer = Buffer.from(await response.arrayBuffer());
         console.timeEnd('FetchVoice');
-
         recognizedText = await recognizeSpeech(audioBuffer);
-
         if (processingMessage) {
-           // Try to delete the "Processing" message, but don't fail if it doesn't work
            await ctx.deleteMessage(processingMessage.message_id).catch(e => console.warn("Failed to delete processing message:", e.message));
-           processingMessage = null; // Ensure we don't try to delete it again in finally
+           processingMessage = null;
         }
-
         if (recognizedText === null) {
-             // recognizeSpeech returned null, indicating an error
              await replyToUser(ctx, 'An error occurred during speech recognition. Please try again.', { reply_to_message_id: messageId });
              return;
         }
         if (!recognizedText) {
-             // Recognition was successful, but returned an empty string
              await replyToUser(ctx, 'Could not recognize speech in the voice message. Please try speaking clearly.', { reply_to_message_id: messageId });
              return;
         }
         console.log(`[${chatId}] Recognized text (Google OGG): "${recognizedText}"`);
 
-        // Check if it's an IELTS answer first
         if (isPotentiallyIeltsAnswer) {
              if (await ieltsHandler.handleIeltsAnswerAndAskNext(ctx, recognizedText)) {
                 console.log(`[${chatId}] Handled voice as IELTS answer.`);
-                return; // Stop further processing if handled as IELTS
+                return;
             } else {
                  console.log(`[${chatId}] Voice was potentially IELTS answer, but handler returned false. Processing normally.`);
             }
         }
 
-        // If not handled as IELTS, proceed with normal grammar check
         console.log(`[${chatId}] Voice Input (Normal): "${recognizedText}"`);
         await ctx.telegram.sendChatAction(chatId, 'typing');
         const grammarResult = await checkGrammar(recognizedText);
-
-        // --- ИСПРАВЛЕНИЕ ---
         if (!grammarResult) {
-            // Если checkGrammar вернул null или undefined, отправляем сообщение об ошибке и выходим
             console.error(`[${chatId}] checkGrammar failed for voice input.`);
             await replyToUser(ctx, 'Sorry, an error occurred while checking grammar for your voice message. Please try again later.', { reply_to_message_id: messageId });
-            return; // Прекращаем обработку этого сообщения
+            return;
         }
-        // --- КОНЕЦ ИСПРАВЛЕНИЯ ---
-
-        // Теперь мы уверены, что grammarResult - это объект
         const { corrected_text, corrections } = grammarResult;
 
         if (corrections && corrections.length > 0) {
-            const correctionId = Date.now().toString() + Math.random().toString(36).substring(2, 7); // More unique ID
-            ctx.session = ctx.session || {}; // Ensure session object exists
+            const correctionId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+            ctx.session = ctx.session || {};
             ctx.session.corrections = ctx.session.corrections || {};
             ctx.session.corrections[correctionId] = corrections;
-
             let responseMessage = `🗣️ Your Message (from voice):\n_"${recognizedText}"_\n\n`;
             responseMessage += `✅ Improved Version:\n_"${corrected_text}"_`;
             const keyboard = Markup.inlineKeyboard([
@@ -413,38 +387,30 @@ bot.on('voice', async (ctx) => {
                 parse_mode: 'Markdown'
             });
         } else if (corrected_text && corrected_text.toLowerCase() !== recognizedText.toLowerCase()) {
-            // No specific errors, but text improved/changed
             let responseMessage = `🗣️ Your Message (from voice):\n_"${recognizedText}"_\n\n`;
             responseMessage += `✅ Improved Version (minor changes):\n_"${corrected_text}"_`;
             await replyToUser(ctx, responseMessage, { reply_to_message_id: messageId, parse_mode: 'Markdown' });
         } else {
-            // Text seems correct
             await replyToUser(ctx, `✅ Your message (from voice) seems correct:\n_"${recognizedText}"_`, { reply_to_message_id: messageId, parse_mode: 'Markdown' });
         }
-
     } catch (error) {
         console.error(`[${chatId}] Error processing voice message:`, error);
         if (processingMessage) {
-            // Attempt to delete processing message again in case of error after it was sent but before it was deleted
-            try { await ctx.deleteMessage(processingMessage.message_id); } catch (e) { /* ignore secondary delete error */ }
+            try { await ctx.deleteMessage(processingMessage.message_id); } catch (e) { /* ignore */ }
         }
         await replyToUser(ctx, `An error occurred while processing your voice message: ${error.message || 'Unknown error'}. Please try again.`, { reply_to_message_id: messageId });
     } finally {
-        // This block executes regardless of errors in the try block
         console.log(`[${chatId}] Finished processing voice message.`);
-        // No need to delete processingMessage here as it's handled within the try block or if an error occurred before it was set
     }
 });
 
-// --- Start Bot ---
 console.log('Starting bot (without FFmpeg)...');
 bot.launch()
     .then(() => console.log('Bot started successfully! Using Google Cloud Speech API (OGG) and Gemini API.'))
     .catch(err => {
         console.error('Error launching bot:', err);
-        process.exit(1); // Exit if the bot fails to start
+        process.exit(1);
     });
 
-// --- Handle Shutdown Signals ---
 process.once('SIGINT', () => { console.log("SIGINT received, stopping bot..."); bot.stop('SIGINT'); });
-process.once('SIGTERM', () => { console.log("SIGTERM received, stopping bot..."); bot.stop('SIGTERM'); });   
+process.once('SIGTERM', () => { console.log("SIGTERM received, stopping bot..."); bot.stop('SIGTERM'); });
