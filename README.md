@@ -24,7 +24,7 @@ A Telegram bot designed to help users improve their English grammar and practice
 ![IELTS topic selection example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/2.jpg)
 
 **3. IELTS Speaking Feedback on an Answer:**
-![IELTS feedback example](URL_ВАШЕГО_ТРЕТЬЕГО_СКРИНШОТА_ЗДЕСЬ)
+![IELTS feedback example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/3.jpg)
 ---
 
 ## 🛠️ Tech Stack
