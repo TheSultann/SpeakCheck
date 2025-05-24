@@ -94,27 +94,6 @@ Follow these steps to set up the project locally:
     *   Answer the questions (text or voice).
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! If you'd like to contribute, please follow these steps:
-
-1.  **Fork the repository.**
-2.  **Create a new branch** for your feature or bug fix:
-    ```bash
-    git checkout -b feature/your-feature-name
-    ```
-3.  **Make your changes** and commit them with clear, descriptive messages:
-    ```bash
-    git commit -m "Add: Implement X feature"
-    ```
-4.  **Push your changes** to your forked repository:
-    ```bash
-    git push origin feature/your-feature-name
-    ```
-5.  **Create a Pull Request** to the main repository.
-
-Please ensure your code adheres to the existing style and that any new features are well-tested.
-
 ---
 
 ## 📜 License
