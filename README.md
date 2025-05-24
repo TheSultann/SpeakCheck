@@ -17,13 +17,14 @@ A Telegram bot designed to help users improve their English grammar and practice
 
 ## 📸 Screenshots
 
-_✨ Showcase your bot in action! Replace these placeholders with actual screenshots._
+**1. Grammar Correction for a Text Message:**
+![Grammar correction example](URL_ВАШЕГО_ПЕРВОГО_СКРИНШОТА_ЗДЕСЬ)
 
-| Grammar Correction (Text)                                 | IELTS Speaking Practice (Topic Selection)                 | IELTS Feedback                                     |
-| :-------------------------------------------------------- | :-------------------------------------------------------- | :------------------------------------------------- |
-| _[Link to Screenshot 1: Grammar correction for text]_    | _[Link to Screenshot 2: IELTS topic selection]_           | _[Link to Screenshot 3: IELTS feedback on answer]_ |
-| *Example: A user sends a text, bot replies with corrections.* | *Example: Bot presents IELTS Part 1 topics via keyboard.* | *Example: Bot provides grammar feedback on a spoken answer.* |
+**2. IELTS Speaking Practice - Topic Selection:**
+![IELTS topic selection example](URL_ВАШЕГО_ВТОРОГО_СКРИНШОТА_ЗДЕСЬ)
 
+**3. IELTS Speaking Feedback on an Answer:**
+![IELTS feedback example](URL_ВАШЕГО_ТРЕТЬЕГО_СКРИНШОТА_ЗДЕСЬ)
 ---
 
 ## 🛠️ Tech Stack
