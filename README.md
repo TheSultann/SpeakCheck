@@ -21,7 +21,7 @@ A Telegram bot designed to help users improve their English grammar and practice
 ![Grammar correction example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/photo_2025-05-24_10-38-32.jpg)
 
 **2. IELTS Speaking Practice - Topic Selection:**
-![IELTS topic selection example](URL_ВАШЕГО_ВТОРОГО_СКРИНШОТА_ЗДЕСЬ)
+![IELTS topic selection example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/2.jpg)
 
 **3. IELTS Speaking Feedback on an Answer:**
 ![IELTS feedback example](URL_ВАШЕГО_ТРЕТЬЕГО_СКРИНШОТА_ЗДЕСЬ)
