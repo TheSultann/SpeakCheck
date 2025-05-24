@@ -32,10 +32,56 @@ _Add screenshots here to showcase the bot in action:_
 
 ---
 
-## 📦 Installation
+---
 
-1. Clone the repository:
 
-```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
+
+📦 Installation  
+Clone the repository:  
+bash  
+Копировать  
+git clone https://github.com/<your-username>/<your-repo-name>.git  
+cd <your-repo-name>  
+
+Install dependencies:  
+bash  
+Копировать  
+npm install  
+
+Set up environment variables in a .env file:  
+env  
+Копировать  
+TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>  
+GEMINI_API_KEY=<your-gemini-api-key>  
+GOOGLE_APPLICATION_CREDENTIALS=<path-to-your-google-cloud-credentials.json>  
+
+Run the bot:  
+bash  
+Копировать  
+npm start  
+
+🖥️ Usage  
+Start the bot on Telegram by sending /start.  
+Send a text or voice message to check grammar.  
+Choose "IELTS Practice" to start practicing IELTS Speaking (Parts 1, 2, or 3).  
+Follow the prompts to answer questions and receive grammar feedback.  
+
+📂 Project Structure  
+index.js: Main bot logic, including grammar checking and voice handling.  
+IELTS/ieltsHandler.js: Handles IELTS Speaking practice logic.  
+IELTS/ieltsQuestions.js: Contains IELTS questions for Parts 1, 2, and 3.  
+.env: Environment variables (not tracked in Git).  
+
+🤝 Contributing  
+Fork the repository.  
+Create a new branch: git checkout -b feature-name.  
+Make your changes and commit: git commit -m "Add feature".  
+Push to your branch: git push origin feature-name.  
+Create a pull request.  
+
+📜 License  
+This project is licensed under the MIT License - see the LICENSE file for details.  
+
+📬 Contact  
+For questions or suggestions, feel free to reach out via Telegram or email: your-email@example.com.
+
