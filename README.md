@@ -18,7 +18,7 @@ A Telegram bot designed to help users improve their English grammar and practice
 ## 📸 Screenshots
 
 **1. Grammar Correction for a Text Message:**
-![Grammar correction example](URL_ВАШЕГО_ПЕРВОГО_СКРИНШОТА_ЗДЕСЬ)
+![Grammar correction example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/photo_2025-05-24_10-38-32.jpg)
 
 **2. IELTS Speaking Practice - Topic Selection:**
 ![IELTS topic selection example](URL_ВАШЕГО_ВТОРОГО_СКРИНШОТА_ЗДЕСЬ)
