@@ -19,7 +19,7 @@ A Telegram bot designed to help users improve their English grammar and practice
 
 
 
-| Grammar Correction                                    | IELTS Topic Selection                                 | IELTS Feedback                                        |
+| Grammar Correction                                    | IELTS Topic Selection                                 | IELTS Сorrection with a voice                                       |
 | :---------------------------------------------------: | :----------------------------------------------------: | :----------------------------------------------------: |
 | <img src="https://raw.githubusercontent.com/TheSultann/SpeakCheck/main/Screens%20for%20git.hub/photo_2025-05-24_10-38-32.jpg" alt="Grammar correction example" width="250"/> | <img src="https://raw.githubusercontent.com/TheSultann/SpeakCheck/main/Screens%20for%20git.hub/2.jpg" alt="IELTS topic selection" width="250"/> | <img src="https://raw.githubusercontent.com/TheSultann/SpeakCheck/main/Screens%20for%20git.hub/3.jpg" alt="IELTS feedback example" width="250"/> |
 
