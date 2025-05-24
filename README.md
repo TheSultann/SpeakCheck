@@ -95,8 +95,8 @@ Follow these steps to set up the project locally:
 
 ## 📜 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-_(Note: You'll need to create a `LICENSE` file with the MIT License text if you haven't already)._
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
+
 
 ---
 
