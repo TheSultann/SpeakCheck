@@ -17,15 +17,11 @@ A Telegram bot designed to help users improve their English grammar and practice
 
 ## 📸 Screenshots
 
-**1. Grammar Correction for a Text Message:**
-![Grammar correction example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/photo_2025-05-24_10-38-32.jpg)
 
-**2. IELTS Speaking Practice - Topic Selection:**
-![IELTS topic selection example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/2.jpg)
 
-**3. IELTS Speaking Feedback on an Answer:**
-![IELTS feedback example](https://github.com/TheSultann/SpeakCheck/blob/main/Screens%20for%20git.hub/3.jpg)
----
+| Grammar Correction                                    | IELTS Topic Selection                                 | IELTS Feedback                                        |
+| :---------------------------------------------------: | :----------------------------------------------------: | :----------------------------------------------------: |
+| <img src="https://raw.githubusercontent.com/TheSultann/SpeakCheck/main/Screens%20for%20git.hub/photo_2025-05-24_10-38-32.jpg" alt="Grammar correction example" width="250"/> | <img src="https://raw.githubusercontent.com/TheSultann/SpeakCheck/main/Screens%20for%20git.hub/2.jpg" alt="IELTS topic selection" width="250"/> | <img src="https://raw.githubusercontent.com/TheSultann/SpeakCheck/main/Screens%20for%20git.hub/3.jpg" alt="IELTS feedback example" width="250"/> |
 
 ## 🛠️ Tech Stack
 
