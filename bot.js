@@ -8,6 +8,7 @@ const os = require('os');
 const path = require('path');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const speech = require('@google-cloud/speech');
+const express = require('express'); // <--- НОВОЕ: Добавляем Express
 
 const ieltsHandler = require('./IELTS/ieltsHandler');
 
@@ -196,23 +197,15 @@ bot.hears('IELTS Practice', (ctx) => {
     ieltsHandler.startIeltsPractice(ctx);
 });
 
-// --- ОБНОВЛЕННЫЙ ОБРАБОТЧИК ---
 bot.on('callback_query', async (ctx) => {
-    // Диагностические логи (можно закомментировать или удалить для продакшена)
     console.log('--- Callback Query Received ---');
     console.log('Callback Data:', ctx.callbackQuery.data);
-    // console.log('Session State (at callback):', JSON.stringify(ctx.session, null, 2)); // Может быть слишком многословно
-
     try {
         const data = ctx.callbackQuery.data;
         const chatId = ctx.chat.id;
-
         if (data.startsWith('show_corrections_')) {
             const correctionId = data.split('show_corrections_')[1];
-            // console.log('Extracted Correction ID:', correctionId); // Для отладки
-
             const correctionsData = ctx.session?.corrections?.[correctionId];
-
             if (correctionsData && correctionsData.length > 0) {
                 const escapeMd = (str) => str.toString().replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
                 let correctionsMessage = `*❗️ Объяснение:*\n\n`;
@@ -220,18 +213,12 @@ bot.on('callback_query', async (ctx) => {
                     correctionsMessage += `${index + 1}\\. ${escapeMd(corr.original_phrase)} → ❌\n`;
                     correctionsMessage += `   ✅ ${escapeMd(corr.corrected_phrase)} — _${escapeMd(corr.explanation)}_\n\n`;
                 });
-
-                // Получаем ID сообщения, к которому была прикреплена кнопка
                 const messageWithButtonId = ctx.callbackQuery.message?.message_id;
-
-                // Отправляем исправления как ответ на это сообщение
                 await ctx.telegram.sendMessage(chatId, correctionsMessage.trim(), {
                     parse_mode: 'MarkdownV2',
-                    reply_to_message_id: messageWithButtonId // <--- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
+                    reply_to_message_id: messageWithButtonId
                 });
-
-                // Очищаем исправления из сессии после показа
-                if (ctx.session?.corrections?.[correctionId]) { // Проверка перед удалением
+                if (ctx.session?.corrections?.[correctionId]) {
                     delete ctx.session.corrections[correctionId];
                     if (Object.keys(ctx.session.corrections).length === 0) {
                         delete ctx.session.corrections;
@@ -248,20 +235,17 @@ bot.on('callback_query', async (ctx) => {
         }
     } catch (error) {
         console.error("Ошибка обработки callback query:", error);
-        if (!ctx.answered) { // Убедимся, что на callback ответили, даже если произошла ошибка
+        if (!ctx.answered) {
             await ctx.answerCbQuery("Произошла ошибка при обработке вашего запроса.").catch(e => console.error("Не удалось ответить на callback query после ошибки:", e));
         }
     }
 });
-// --- КОНЕЦ ОБНОВЛЕННОГО ОБРАБОТЧИКА ---
 
 bot.on('text', async (ctx) => {
     const userMessage = ctx.message.text;
     const chatId = ctx.chat.id;
     const messageId = ctx.message.message_id;
-
     if (userMessage === 'IELTS Practice') return;
-
     if (ctx.session?.ieltsState?.waitingAnswer) {
         if (await ieltsHandler.handleIeltsAnswerAndAskNext(ctx, userMessage)) {
             console.log(`[${chatId}] Handled text as IELTS answer.`);
@@ -270,10 +254,8 @@ bot.on('text', async (ctx) => {
             console.log(`[${chatId}] Text was potentially IELTS answer, but handler returned false. Processing normally.`);
         }
     }
-
     console.log(`[${chatId}] User Text Input (Normal): "${userMessage}"`);
     await ctx.telegram.sendChatAction(chatId, 'typing');
-
     try {
         const grammarResult = await checkGrammar(userMessage);
         if (!grammarResult) {
@@ -282,13 +264,11 @@ bot.on('text', async (ctx) => {
             return;
         }
         const { corrected_text, corrections } = grammarResult;
-
         if (corrections && corrections.length > 0) {
             const correctionId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
             ctx.session = ctx.session || {};
             ctx.session.corrections = ctx.session.corrections || {};
             ctx.session.corrections[correctionId] = corrections;
-
             let responseMessage = `❌ Your Message:\n_"${userMessage}"_\n\n`;
             responseMessage += `✅ Improved Version:\n_"${corrected_text}"_`;
             const keyboard = Markup.inlineKeyboard([
@@ -317,17 +297,13 @@ bot.on('voice', async (ctx) => {
     const chatId = ctx.chat.id;
     const messageId = ctx.message.message_id;
     console.log(`[${chatId}] Received voice message (Duration: ${voice.duration}s, Size: ${voice.file_size} bytes, Type: ${voice.mime_type})`);
-
     const isPotentiallyIeltsAnswer = ctx.session?.ieltsState?.waitingAnswer ?? false;
-
     if (voice.file_size > CONFIG.MAX_FILE_SIZE) {
         return replyToUser(ctx, `File is too large. Maximum size is ${CONFIG.MAX_FILE_SIZE / 1024 / 1024} MB.`, { reply_to_message_id: messageId });
     }
-
     let processingMessage = null;
     let recognizedText = null;
     let audioBuffer = null;
-
     try {
         processingMessage = await ctx.reply('Processing your voice message... ⏳', { reply_to_message_id: messageId, disable_notification: true });
         await ctx.telegram.sendChatAction(chatId, 'typing');
@@ -351,7 +327,6 @@ bot.on('voice', async (ctx) => {
              return;
         }
         console.log(`[${chatId}] Recognized text (Google OGG): "${recognizedText}"`);
-
         if (isPotentiallyIeltsAnswer) {
              if (await ieltsHandler.handleIeltsAnswerAndAskNext(ctx, recognizedText)) {
                 console.log(`[${chatId}] Handled voice as IELTS answer.`);
@@ -360,7 +335,6 @@ bot.on('voice', async (ctx) => {
                  console.log(`[${chatId}] Voice was potentially IELTS answer, but handler returned false. Processing normally.`);
             }
         }
-
         console.log(`[${chatId}] Voice Input (Normal): "${recognizedText}"`);
         await ctx.telegram.sendChatAction(chatId, 'typing');
         const grammarResult = await checkGrammar(recognizedText);
@@ -370,7 +344,6 @@ bot.on('voice', async (ctx) => {
             return;
         }
         const { corrected_text, corrections } = grammarResult;
-
         if (corrections && corrections.length > 0) {
             const correctionId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
             ctx.session = ctx.session || {};
@@ -404,13 +377,58 @@ bot.on('voice', async (ctx) => {
     }
 });
 
-console.log('Starting bot (without FFmpeg)...');
-bot.launch()
-    .then(() => console.log('Bot started successfully! Using Google Cloud Speech API (OGG) and Gemini API.'))
-    .catch(err => {
-        console.error('Error launching bot:', err);
-        process.exit(1);
-    });
+// --- НОВОЕ: Настройка и запуск HTTP-сервера ---
+const app = express();
+const PORT = process.env.PORT || 3000; // Render предоставит PORT
 
-process.once('SIGINT', () => { console.log("SIGINT received, stopping bot..."); bot.stop('SIGINT'); });
-process.once('SIGTERM', () => { console.log("SIGTERM received, stopping bot..."); bot.stop('SIGTERM'); });
+// Health check endpoint для Render
+app.get('/', (req, res) => {
+  res.status(200).send('Telegram Bot (SpeakCheck) is running and healthy! Using long polling.');
+});
+
+// Опционально: еще один стандартный health check endpoint
+app.get('/healthz', (req, res) => {
+    res.status(200).send('ok');
+});
+
+// Запускаем HTTP-сервер
+const server = app.listen(PORT, '0.0.0.0', () => { // Важно слушать на 0.0.0.0
+  console.log(`HTTP server listening on port ${PORT}. Ready for Render health checks.`);
+
+  // Теперь, когда HTTP-сервер запущен, запускаем Telegram-бота
+  console.log('Starting Telegram bot (long polling mode, without FFmpeg)...');
+  bot.launch()
+    .then(() => {
+        console.log('Bot started successfully! Using Google Cloud Speech API (OGG) and Gemini API.');
+        console.log('Telegram bot is active and using long polling.');
+    })
+    .catch(err => {
+        console.error('CRITICAL: Error launching Telegram bot:', err);
+        // Если бот не запустился, останавливаем HTTP-сервер и выходим с ошибкой
+        server.close(() => {
+            console.log('HTTP server closed due to bot launch failure.');
+            process.exit(1);
+        });
+    });
+});
+// --- КОНЕЦ HTTP-сервера ---
+
+
+// --- ОБНОВЛЕНО: Корректное завершение работы ---
+process.once('SIGINT', () => {
+    console.log("SIGINT received, stopping bot and server...");
+    bot.stop('SIGINT');
+    server.close(() => {
+        console.log('HTTP server closed.');
+        process.exit(0); // Успешное завершение
+    });
+});
+
+process.once('SIGTERM', () => {
+    console.log("SIGTERM received, stopping bot and server...");
+    bot.stop('SIGTERM');
+    server.close(() => {
+        console.log('HTTP server closed.');
+        process.exit(0); // Успешное завершение
+    });
+});
