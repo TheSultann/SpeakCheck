@@ -7,10 +7,10 @@
 
     // --- Клавиатуры ---
     const getPartsKeyboard = () => Markup.inlineKeyboard([
-        [Markup.button.callback('Part 1', 'ielts_select_part_1')],
-        [Markup.button.callback('Part 2 ', 'ielts_select_part_2')],
-        [Markup.button.callback('Part 3 ', 'ielts_select_part_3')],
-        [Markup.button.callback('❌ Cancel', 'ielts_cancel')]
+        [Markup.button.callback('Part 1 🥇', 'ielts_select_part_1')],
+        [Markup.button.callback('Part 2 🥈', 'ielts_select_part_2')],
+        [Markup.button.callback('Part 3 🥉', 'ielts_select_part_3')]
+        // Кнопка "Cancel" здесь больше не нужна, так как ее нет в вашем дизайне
     ]);
 
     const getPart1TopicsKeyboard = () => {
